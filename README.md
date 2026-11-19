@@ -6,7 +6,7 @@
 
 把以下提示词发送给具有本机操作权限的 Codex：
 
-> 请从 https://github.com/pixmovingit/teams-ai-assistant 安装 Teams AI Assistant 技能。检查当前系统、Git 和 Python 3.9+，克隆仓库并检查安装脚本；Windows 运行 install.ps1，macOS 或 Linux 运行 install.sh。若已有同名技能，请先检查并保留本地修改。安装完成后使用技能目录的虚拟环境启动设备代码登录，把登录网址和代码告诉我，由我用自己的公司账号完成登录；验证登录后提醒我重启 Codex。不要读取或分享令牌，也不要发送测试消息。
+> 请帮我从 https://github.com/pixmovingit/teams-ai-assistant 安装或更新 Teams AI Assistant 技能。请自动识别操作系统，检查并配置运行环境，查看仓库中的安装说明和脚本，然后完成安装；如已安装，请保留本地修改和登录缓存，再更新技能及依赖。安装后验证登录：如果需要，请提供微软设备登录网址和一次性代码，由我用自己的公司账号完成登录。完成后告诉我结果，并提醒我重启 Codex。请勿读取或分享密码、令牌，也不要发送测试消息。
 
 仓库访问需要相应 GitHub 权限。安装脚本不会覆盖已有同名技能。更新时先检查并保留本地修改，替换技能目录的源码及依赖文件，并使用该目录虚拟环境运行 `python -m pip install -r requirements.txt`。默认应用配置属于本公司，其他组织可设置 `TEAMS_CLIENT_ID` 和 `TEAMS_TENANT_ID` 环境变量覆盖。
 
