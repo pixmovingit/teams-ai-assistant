@@ -11,7 +11,7 @@ import uuid
 
 GRAPH = 'https://graph.microsoft.com/v1.0'
 CACHE = Path(os.environ.get('TEAMS_CACHE_DIR', Path.home() / '.local' / 'share' / 'teams-ai-assistant')) / 'msal-cache.bin'
-SCOPES = ['User.Read', 'User.ReadBasic.All', 'Chat.Create', 'Chat.ReadBasic', 'ChatMessage.Send']
+SCOPES = ['User.Read', 'User.ReadBasic.All', 'Chat.Create', 'Chat.ReadBasic', 'Chat.Read', 'ChatMessage.Send']
 AI_LABEL = '🤖 AI 助手代发\n'
 
 
@@ -85,12 +85,17 @@ def main():
     users.add_argument('--query', required=True)
     sub.add_parser('login', help='登录或验证已保存的登录')
     sub.add_parser('chats', help='列出已加入的聊天')
+    messages = sub.add_parser('messages', help='读取指定单聊或群聊的近期消息')
+    messages.add_argument('--chat-id', required=True, help='聊天 ID，可通过 chats 查询')
+    messages.add_argument('--limit', type=int, default=20, help='最多读取的消息数（1–200，默认 20）')
     send = sub.add_parser('send', help='发送单聊或群聊消息')
     target = send.add_mutually_exclusive_group(required=True)
     target.add_argument('--user-id', help='新建或取得与该用户的一对一聊天')
     target.add_argument('--chat-id', help='现有单聊或群聊的 ID')
     send.add_argument('--message', required=True)
     args = parser.parse_args()
+    if args.command == 'messages' and not 1 <= args.limit <= 200:
+        parser.error('--limit 必须在 1 到 200 之间')
     token = login()
     if args.command == 'login':
         me = request(GRAPH + '/me?$select=id,displayName,userPrincipalName', token=token)
@@ -107,6 +112,21 @@ def main():
             result = request(url, token=token)
             print(json.dumps(result.get('value', []), ensure_ascii=False, indent=2))
             url = result.get('@odata.nextLink')
+    elif args.command == 'messages':
+        url = GRAPH + '/chats/' + urllib.parse.quote(args.chat_id, safe='') + '/messages?' + urllib.parse.urlencode({'$top': min(args.limit, 50)})
+        collected = []
+        has_more = False
+        while url and len(collected) < args.limit:
+            parsed = urllib.parse.urlsplit(url)
+            if parsed.scheme != 'https' or parsed.netloc != 'graph.microsoft.com':
+                raise ValueError('Microsoft Graph 返回了不受信任的分页地址。')
+            page = request(url, token=token)
+            values = page.get('value', [])
+            remaining = args.limit - len(collected)
+            collected.extend(values[:remaining])
+            url = page.get('@odata.nextLink')
+            has_more = len(values) > remaining or bool(url)
+        print(json.dumps({'chatId': args.chat_id, 'messages': collected, 'hasMore': has_more}, ensure_ascii=False, indent=2))
     elif args.command == 'send':
         if not args.message.strip():
             raise ValueError('消息不能为空。')

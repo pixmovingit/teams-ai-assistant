@@ -1,6 +1,6 @@
 # Teams AI Assistant
 
-使用 Microsoft Graph 委托权限，以登录用户身份向 Teams 单聊或已有群聊发送消息。每条消息自动以「🤖 AI 助手代发」开头。
+使用 Microsoft Graph 委托权限，以登录用户身份读取 Teams 单聊或已有群聊消息，并向聊天发送消息。每条发送的消息自动以「🤖 AI 助手代发」开头。
 
 ## 让 AI 安装
 
@@ -15,7 +15,7 @@
 - Windows、macOS 或 Linux，以及 Python 3.9 或更高版本和 Git。安装脚本在技能目录创建虚拟环境并安装 MSAL 依赖。
 - Linux 需要可用且已解锁的 Secret Service（如 GNOME Keyring）和用户 D-Bus 会话；无桌面或无密钥服务的服务器需先配置安全存储。不会降级为明文令牌。
 - 在 Microsoft Entra 注册单租户公共客户端应用，启用公共客户端流。
-- 配置 Microsoft Graph **委托权限**：`User.Read`、`User.ReadBasic.All`、`Chat.Create`、`Chat.ReadBasic`、`ChatMessage.Send`，按组织策略授予同意。`offline_access` 用于刷新令牌。
+- 配置 Microsoft Graph **委托权限**：`User.Read`、`User.ReadBasic.All`、`Chat.Create`、`Chat.ReadBasic`、`Chat.Read`、`ChatMessage.Send`，按组织策略授予同意。`Chat.Read` 用于读取当前用户可访问的聊天消息，`offline_access` 用于刷新令牌。增加权限后，已有用户可能需要重新登录或同意。
 - 用户需拥有 Teams 访问权限，且只能以自己有权访问的身份和聊天操作。企业应用若要求分配，请先分配用户或组。
 
 ## 使用
@@ -31,10 +31,11 @@
 ```powershell
 <技能虚拟环境的python> scripts/teams.py users --query '姓名或邮箱前缀'
 <技能虚拟环境的python> scripts/teams.py chats
+<技能虚拟环境的python> scripts/teams.py messages --chat-id '<聊天ID>' --limit 20
 <技能虚拟环境的python> scripts/teams.py send --user-id '<用户ID>' --message '你好'
 <技能虚拟环境的python> scripts/teams.py send --chat-id '<已有群聊ID>' --message '大家好'
 ```
 
-`users` 最多返回 25 条；`chats` 返回所有分页的聊天信息。请核对目标后发送。单聊命令会创建或取得一对一聊天；群聊命令发送到指定的已有聊天。暂不支持创建群聊、频道消息、附件或读取消息正文。请勿向程序传入不可信的消息目标。首次申请权限或租户策略变化时，可能需要管理员再次同意。
+`users` 最多返回 25 条；`chats` 返回所有分页的聊天信息。`messages` 默认读取最近 20 条，`--limit` 可设为 1 至 200；输出为 Graph 原始消息，正文可能包含 HTML，`hasMore` 表示还有未读取的消息。读取范围受登录用户的 Teams 访问权限限制。请核对目标后发送。单聊命令会创建或取得一对一聊天；群聊命令发送到指定的已有聊天。暂不支持创建群聊、频道消息或下载附件。请勿向程序传入不可信的消息目标。首次申请权限或租户策略变化时，可能需要管理员再次同意。
 
 这是供授权用户主动操作的工具，不会自行监控消息或自动回复。AI 标识是消息文字的一部分，不是 Teams 的原生标记。

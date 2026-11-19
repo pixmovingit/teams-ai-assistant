@@ -52,6 +52,28 @@ class SendTests(unittest.TestCase):
             self.assertEqual(teams.login(), 'test-token')
         app.initiate_device_flow.assert_not_called()
 
+    def test_read_messages_follows_pages_and_respects_limit(self):
+        from unittest.mock import MagicMock
+        pages = [
+            {'value': [{'id': '1'}, {'id': '2'}], '@odata.nextLink': 'https://graph.microsoft.com/v1.0/chats/next'},
+            {'value': [{'id': '3'}, {'id': '4'}], '@odata.nextLink': 'https://graph.microsoft.com/v1.0/chats/more'},
+        ]
+        request = MagicMock(side_effect=pages)
+        output = io.StringIO()
+        with patch.object(sys, 'argv', ['teams.py', 'messages', '--chat-id', '19:group/id', '--limit', '3']), patch.object(teams, 'login', return_value='token'), patch.object(teams, 'request', request), contextlib.redirect_stdout(output):
+            teams.main()
+        result = teams.json.loads(output.getvalue())
+        self.assertEqual([message['id'] for message in result['messages']], ['1', '2', '3'])
+        self.assertTrue(result['hasMore'])
+        self.assertIn('19%3Agroup%2Fid/messages', request.call_args_list[0].args[0])
+
+    def test_read_messages_rejects_untrusted_pagination(self):
+        pages = [{'value': [{'id': '1'}], '@odata.nextLink': 'https://example.com/steal'}]
+        with patch.object(sys, 'argv', ['teams.py', 'messages', '--chat-id', 'chat', '--limit', '2']), patch.object(teams, 'login', return_value='token'), patch.object(teams, 'request', side_effect=pages) as request:
+            with self.assertRaises(ValueError):
+                teams.main()
+        self.assertEqual(request.call_count, 1)
+
 
 if __name__ == '__main__':
     unittest.main()
