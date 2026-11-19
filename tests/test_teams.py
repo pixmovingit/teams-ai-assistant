@@ -39,10 +39,18 @@ class SendTests(unittest.TestCase):
         self.assertIn("users('00000000-0000-0000-0000-000000000002')", calls[1][1]['members'][1]['user@odata.bind'])
         self.assertTrue(calls[2][1]['body']['content'].startswith(teams.AI_LABEL))
 
-    @unittest.skipUnless(sys.platform == 'win32', 'Windows DPAPI required')
-    def test_cache_encryption_round_trip(self):
-        data = b'local test data'
-        self.assertEqual(teams.protect(teams.protect(data), decrypt=True), data)
+    def test_login_reuses_cached_account(self):
+        from unittest.mock import MagicMock
+        import tempfile
+        app = MagicMock()
+        app.get_accounts.return_value = [{'username': 'test@example.com'}]
+        app.acquire_token_silent.return_value = {'access_token': 'test-token'}
+        fake_msal = MagicMock()
+        fake_msal.PublicClientApplication.return_value = app
+        fake_ext = MagicMock()
+        with tempfile.TemporaryDirectory() as directory, patch.object(teams, 'CACHE', Path(directory) / 'cache'), patch.dict(sys.modules, {'msal': fake_msal, 'msal_extensions': fake_ext}):
+            self.assertEqual(teams.login(), 'test-token')
+        app.initiate_device_flow.assert_not_called()
 
 
 if __name__ == '__main__':

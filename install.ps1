@@ -17,10 +17,15 @@ if (Test-Path -LiteralPath $destination) {
 New-Item -ItemType Directory -Path (Join-Path $destination 'scripts') -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $source 'SKILL.md'), (Join-Path $source 'README.md') -Destination $destination
 Copy-Item -LiteralPath (Join-Path $source 'scripts\teams.py') -Destination (Join-Path $destination 'scripts\teams.py')
+Copy-Item -LiteralPath (Join-Path $source 'requirements.txt') -Destination $destination
+& python -m venv (Join-Path $destination '.venv')
+if ($LASTEXITCODE -ne 0) { throw '创建虚拟环境失败。' }
+& (Join-Path $destination '.venv\Scripts\python.exe') -m pip install -r (Join-Path $destination 'requirements.txt')
+if ($LASTEXITCODE -ne 0) { throw '依赖安装失败，请检查网络及目标目录后重试。' }
 [Environment]::SetEnvironmentVariable('TEAMS_CLIENT_ID', $ClientId, 'User')
 [Environment]::SetEnvironmentVariable('TEAMS_TENANT_ID', $TenantId, 'User')
 $env:TEAMS_CLIENT_ID = $ClientId
 $env:TEAMS_TENANT_ID = $TenantId
 Write-Output "技能安装完成：$destination"
 Write-Output '请重新启动 Codex，随后使用 Teams AI Assistant 登录公司账号。'
-Write-Output "也可立即运行：python `"$destination\scripts\teams.py`" login"
+Write-Output "也可立即运行：& `"$destination\.venv\Scripts\python.exe`" `"$destination\scripts\teams.py`" login"
