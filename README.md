@@ -2,6 +2,14 @@
 
 使用 Microsoft Graph 委托权限，以登录用户身份向 Teams 单聊或已有群聊发送消息。每条消息自动以「🤖 AI 助手代发」开头。
 
+## 让 AI 安装
+
+把以下提示词发送给具有本机操作权限的 Codex：
+
+> 请从 https://github.com/pixmovingit/teams-ai-assistant 安装 Teams AI Assistant 技能。先检查 Windows、Git 和 Python 3.9+，再克隆仓库并检查 install.ps1；运行该脚本将技能安装到当前用户的 Codex 技能目录，并配置脚本内的公司客户端 ID 和租户 ID。若已有同名技能，请先检查并保留本地修改。安装完成后，将用户环境变量 TEAMS_CLIENT_ID 和 TEAMS_TENANT_ID 加载到当前进程，启动设备代码登录，将登录网址和代码告诉我，由我用自己的公司账号完成登录；验证登录后提醒我重启 Codex 以加载技能。不要读取或分享令牌，也不要发送任何测试消息。
+
+仓库访问需要相应 GitHub 权限。安装脚本不会覆盖已有同名技能；若需更新，先检查本地修改，再将仓库新版本的 `SKILL.md`、`README.md` 和 `scripts/teams.py` 复制到技能目录。默认应用配置属于本公司，其他组织可向 `install.ps1` 传入 `-ClientId` 和 `-TenantId`。
+
 ## 环境与管理员配置
 
 - Windows 和 Python 3.9 或更高版本；不需要额外 Python 包。
